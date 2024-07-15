@@ -174,28 +174,28 @@ typedef struct {
 } Elf64_Phdr;
 
 // Values for p_type
-#define	PT_NULL		0
-#define PT_LOAD		1
-#define PT_DYNAMIC	2
-#define PT_INTERP	3
-#define PT_NOTE		4
-#define PT_SHLIB	5
-#define PT_PHDR		6
-#define PT_TLS		7
-#define	PT_NUM		8
-#define PT_LOOS		0x60000000
-#define PT_GNU_EH_FRAME	0x6474e550
-#define PT_GNU_STACK	0x6474e551
-#define PT_GNU_RELRO	0x6474e552
-#define PT_GNU_PROPERTY	0x6474e553
-#define PT_GNU_SFRAME	0x6474e554
-#define PT_LOSUNW	0x6ffffffa
-#define PT_SUNWBSS	0x6ffffffa
-#define PT_SUNWSTACK	0x6ffffffb
-#define PT_HISUNW	0x6fffffff
-#define PT_HIOS		0x6fffffff
-#define PT_LOPROC	0x70000000
-#define PT_HIPROC	0x7fffffff
+#define PT_NULL         0
+#define PT_LOAD         1
+#define PT_DYNAMIC      2
+#define PT_INTERP       3
+#define PT_NOTE         4
+#define PT_SHLIB        5
+#define PT_PHDR         6
+#define PT_TLS          7
+#define PT_NUM          8
+#define PT_LOOS         0x60000000
+#define PT_GNU_EH_FRAME 0x6474e550
+#define PT_GNU_STACK    0x6474e551
+#define PT_GNU_RELRO    0x6474e552
+#define PT_GNU_PROPERTY 0x6474e553
+#define PT_GNU_SFRAME   0x6474e554
+#define PT_LOSUNW       0x6ffffffa
+#define PT_SUNWBSS      0x6ffffffa
+#define PT_SUNWSTACK    0x6ffffffb
+#define PT_HISUNW       0x6fffffff
+#define PT_HIOS         0x6fffffff
+#define PT_LOPROC       0x70000000
+#define PT_HIPROC       0x7fffffff
 
 // Flags for p_flags
 #define PF_X 0x1
@@ -208,6 +208,7 @@ typedef struct {
     uint32_t sh_name;
     uint32_t sh_type;
     uint64_t sh_flags;
+    uint64_t sh_addr;
     uint64_t sh_offset;
     uint64_t sh_size;
     uint32_t sh_link;
@@ -216,10 +217,67 @@ typedef struct {
     uint64_t sh_entsize;
 } Elf64_Shdr;
 
+// Section indices
+#define SHN_UNDEF       0      // Undefined section
+#define SHN_LORESERVE   0xff00 // Start of reserved indices
+#define SHN_LOPROC      0xff00 // Start of processor-specific
+#define SHN_HIPROC      0xff1f // End of processor-specific
+#define SHN_LOOS        0xff20 // Start of OS-specific
+#define SHN_HIOS        0xff3f // End of OS-specific
+#define SHN_ABS         0xfff1 // Associated symbol is absolute
+#define SHN_COMMON      0xfff2 // Associated symbol is common
+#define SHN_XINDEX      0xffff // Index is in extra table.
+#define SHN_HIRESERVE   0xffff // End of reserved indices
+
+// Values for sh_type
+#define SHT_NULL          0
+#define SHT_PROGBITS      1
+#define SHT_SYMTAB        2
+#define SHT_STRTAB        3
+#define SHT_RELA          4
+#define SHT_HASH          5
+#define SHT_DYNAMIC       6
+#define SHT_NOTE          7
+#define SHT_NOBITS        8
+#define SHT_REL           9
+#define SHT_SHLIB         10
+#define SHT_DYNSYM        11
+#define SHT_INIT_ARRAY    14
+#define SHT_FINI_ARRAY    15
+#define SHT_PREINIT_ARRAY 16
+#define SHT_GROUP         17
+#define SHT_SYMTAB_SHNDX  18
+#define SHT_LOOS          0x60000000
+#define SHT_HIOS          0x6fffffff
+#define SHT_LOPROC        0x70000000
+#define SHT_HIPROC        0x7fffffff
+#define SHT_LOUSER        0x80000000
+#define SHT_HIUSER        0xffffffff
+
+// Values for sh_flags
+#define SHF_WRITE            0x1
+#define SHF_ALLOC            0x2
+#define SHF_EXECINSTR        0x4
+#define SHF_MERGE            0x10
+#define SHF_STRINGS          0x20
+#define SHF_INFO_LINK        0x40
+#define SHF_LINK_ORDER       0x80
+#define SHF_OS_NONCONFORMING 0x100
+#define SHF_GROUP            0x200
+#define SHF_TLS              0x400
+#define SHF_COMPRESSED       0x800
+#define SHF_EXCLUDE          0x80000000
+#define SHF_MASKOS           0x0ff00000
+#define SHF_MASKPROC         0xf0000000
+
+
 // Functions
 
-char *get_class(Elf64_Ehdr *elf_head);
-char *get_osabi(Elf64_Ehdr *elf_head);
-char *get_type(Elf64_Ehdr* elf_head);
-char *get_machine(Elf64_Ehdr* elf_head);
-char *get_ptype(Elf64_Phdr* elf_head);
+const char *get_class(uint8_t e_class);
+const char *get_osabi(uint8_t e_osabi);
+const char *get_etype(uint16_t e_type);
+const char *get_machine(uint16_t e_machine);
+const char *get_ptype(uint32_t p_type);
+const char *get_stype(uint32_t sh_type);
+const char *get_sflags(uint64_t sh_flags);
+const char *get_string(Elf64_Ehdr *elf_head, uint32_t sh_name, char* elf_image);

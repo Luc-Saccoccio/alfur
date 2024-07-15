@@ -37,12 +37,12 @@ void display_header(Elf64_Ehdr* elf_head, char* elf_path) {
     fprintf(stdout, "=== Alfur ===\n");
     fprintf(stdout, "ELF statistics for %s, %s, ELF version %d\n",
             elf_path, encoding, elf_head->e_ident[EI_VERSION]);
-    fprintf(stdout, "  Class:                      %s\n", get_class(elf_head));
+    fprintf(stdout, "  Class:                      %s\n", get_class(elf_head->e_ident[EI_CLASS]));
     fprintf(stdout, "  Version:                    %d\n", elf_head->e_ident[EI_VERSION]);
-    fprintf(stdout, "  OS/ABI:                     %s\n", get_osabi(elf_head));
+    fprintf(stdout, "  OS/ABI:                     %s\n", get_osabi(elf_head->e_ident[EI_OSABI]));
     fprintf(stdout, "  ABI Version:                %d\n", elf_head->e_ident[EI_ABIVERSION]);
-    fprintf(stdout, "  Type:                       %s\n", get_type(elf_head));
-    fprintf(stdout, "  Machine:                    %s\n", get_machine(elf_head));
+    fprintf(stdout, "  Type:                       %s\n", get_etype(elf_head->e_type));
+    fprintf(stdout, "  Machine:                    %s\n", get_machine(elf_head->e_machine));
     fprintf(stdout, "  Version:                    0x%X\n", elf_head->e_version);
     fprintf(stdout, "  Entry Point Access:         0x%lX\n", elf_head->e_entry);
     fprintf(stdout, "  Start of program headers:   %lu\n", elf_head->e_phoff);
@@ -61,30 +61,49 @@ void display_programs(Elf64_Ehdr *elf_head, char *elf_image) {
         fprintf(stdout, "No progam header\n");
         return;
     }
-    Elf64_Phdr *ptr;
-    ptr = (Elf64_Phdr*)(elf_image + elf_head->e_phoff);
+    Elf64_Phdr *elf_phead;
+    elf_phead = (Elf64_Phdr*)(elf_image + elf_head->e_phoff);
 
-    fprintf(stdout, "\nProgram Headers:\n");
-            /* "  Type           Offset             VirtAddr           PhysAddr\n"
-            "                 FileSiz            MemSiz              Flags  Align"); */
+    fprintf(stdout, "\n== Program Headers ==\n");
 
-    for (int i = 0; i < elf_head->e_phnum; i++, ptr++) {
-        fprintf(stdout, "* Type:             %s\n", get_ptype(ptr));
+    for (int i = 0; i < elf_head->e_phnum; i++, elf_phead++) {
+        fprintf(stdout, "* Type:             %s\n", get_ptype(elf_phead->p_type));
         fprintf(stdout, "  Flags:            %c%c%c\n",
-                (ptr->p_flags & PF_R ? 'R' : ' '),
-                (ptr->p_flags & PF_W ? 'W' : ' '),
-                (ptr->p_flags & PF_X ? 'X' : ' '));
-        fprintf(stdout, "  Offset:           0x%16.16lx\n", (unsigned long)ptr->p_offset);
-        fprintf(stdout, "  Virtual Address:  0x%16.16lx\n", (unsigned long)ptr->p_vaddr);
-        fprintf(stdout, "  Physical Address: 0x%16.16lx\n", (unsigned long)ptr->p_paddr);
-        fprintf(stdout, "  File Size:        0x%16.16lx\n", (unsigned long)ptr->p_filesz);
-        fprintf(stdout, "  Memory Size:      0x%16.16lx\n", (unsigned long)ptr->p_memsz);
-        fprintf(stdout, "  Align:            %#lx\n", (unsigned long)ptr->p_align);
+                (elf_phead->p_flags & PF_R ? 'R' : ' '),
+                (elf_phead->p_flags & PF_W ? 'W' : ' '),
+                (elf_phead->p_flags & PF_X ? 'X' : ' '));
+        fprintf(stdout, "  Offset:           %#16.16lx\n", (unsigned long)elf_phead->p_offset);
+        fprintf(stdout, "  Virtual Address:  %#16.16lx\n", (unsigned long)elf_phead->p_vaddr);
+        fprintf(stdout, "  Physical Address: %#16.16lx\n", (unsigned long)elf_phead->p_paddr);
+        fprintf(stdout, "  File Size:        %#16.16lx\n", (unsigned long)elf_phead->p_filesz);
+        fprintf(stdout, "  Memory Size:      %#16.16lx\n", (unsigned long)elf_phead->p_memsz);
+        fprintf(stdout, "  Align:            %#lx\n", (unsigned long)elf_phead->p_align);
     }
 }
 
-void display_sections(Elf64_Ehdr *elf_head, char *elf_imge) {
+void display_sections(Elf64_Ehdr *elf_head, char *elf_image) {
+    if (elf_head->e_shnum == 0) {
+        fprintf(stdout, "No section header\n");
+        return;
+    }
 
+    Elf64_Shdr *elf_shead;
+    elf_shead = (Elf64_Shdr*)(elf_image + elf_head->e_shoff);
+
+    fprintf(stdout, "\n== Section Headers ==\n");
+
+    for (int i = 0; i < elf_head->e_shnum; i++, elf_shead++) {
+        fprintf(stdout, "* Name:    %s\n", get_string(elf_head, elf_shead->sh_name, elf_image));
+        fprintf(stdout, "  Type:    %s\n", get_stype(elf_shead->sh_type));
+        fprintf(stdout, "  Flags:   %s\n", get_sflags(elf_shead->sh_flags));
+        fprintf(stdout, "  Address: %#16.16lx\n", elf_shead->sh_addr);
+        fprintf(stdout, "  Offset:  %#8.8lx\n", elf_shead->sh_offset);
+        fprintf(stdout, "  Size:    %#16.16lx\n", elf_shead->sh_size);
+        fprintf(stdout, "  Link:    %d (TODO)\n", elf_shead->sh_link);
+        fprintf(stdout, "  Info:    %d (TODO)\n", elf_shead->sh_info);
+        fprintf(stdout, "  Align:   %ld\n", elf_shead->sh_addralign);
+        fprintf(stdout, "  EntSize: %#16.16lx\n", elf_shead->sh_entsize);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -118,6 +137,7 @@ int main(int argc, char *argv[]) {
 
     display_header(elf_head, elf_path);
     display_programs(elf_head, elf_image);
+    display_sections(elf_head, elf_image);
 
     if (munmap(elf_image, elf_stat.st_size) < 0)
         error("Failed unmapping the file! %s\n");

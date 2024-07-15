@@ -3,26 +3,26 @@
 
 #include "elf.h"
 
-char *get_class(Elf64_Ehdr *elf_head) {
+const char *get_class(uint8_t e_class) {
     static char s[16];
     memset(s, 0, 16);
 
-    switch (elf_head->e_ident[EI_CLASS]) {
+    switch (e_class) {
         case ELFCLASSNONE: return "INVALID";
         case ELFCLASS32:   return "ELF32";
         case ELFCLASS64:   return "ELF64";
 
         default:
-            snprintf(s, 16, "UNKNOWN (%d)", elf_head->e_ident[EI_CLASS]);
+            snprintf(s, 16, "UNKNOWN (%d)", e_class);
             return s;
     }
 }
 
-char *get_osabi(Elf64_Ehdr *elf_head) {
+const char *get_osabi(uint8_t e_osabi) {
     static char s[16];
     memset(s, 0, 16);
 
-    switch (elf_head->e_ident[EI_OSABI]) {
+    switch (e_osabi) {
         case ELFOSABI_SYSV:       return "System V";
         case ELFOSABI_HPUX:       return "HP-UX";
         case ELFOSABI_NETBSD:     return "NetBSD";
@@ -46,43 +46,43 @@ char *get_osabi(Elf64_Ehdr *elf_head) {
         case ELFOSABI_STANDALONE: return "Standalone application";
 
         default:
-            snprintf(s, 16, "Unknown (%d)", elf_head->e_ident[EI_OSABI]);
+            snprintf(s, 16, "Unknown (%d)", e_osabi);
             return s;
     }
 }
 
-char *get_type(Elf64_Ehdr* elf_head) {
-    static char s[32];
-    memset(s, 0, 32);
-
-    if ((elf_head->e_type >= ET_LOOS) && (elf_head->e_type) <= ET_HIOS) {
-        snprintf(s, 32, "OS Specific (%d)", elf_head->e_type);
-        return s;
-    }
-
-    if ((elf_head->e_type >= ET_LOPROC) && (elf_head->e_type) <= ET_HIPROC) {
-        snprintf(s, 32, "Processor Specific (%d)", elf_head->e_type);
-        return s;
-    }
-
-    switch (elf_head->e_type) {
-        case ET_NONE: return "No file type";
-        case ET_REL:  return "Relocatable";
-        case ET_EXEC: return "Executable";
-        case ET_DYN:  return "Shared Object";
-        case ET_CORE: return "Core";
-
-        default:
-            snprintf(s, 32, "Unknown (%d)", elf_head->e_type);
-            return s;
-    }
-}
-
-char *get_machine(Elf64_Ehdr* elf_head) {
+const char *get_etype(uint16_t e_type) {
     static char s[16];
     memset(s, 0, 16);
 
-    switch (elf_head->e_machine) {
+    if ((e_type >= ET_LOOS) && (e_type) <= ET_HIOS) {
+        snprintf(s, 16, "OS+%#x", e_type);
+        return s;
+    }
+
+    if ((e_type >= ET_LOPROC) && (e_type) <= ET_HIPROC) {
+        snprintf(s, 16, "PROC+%#x)", e_type);
+        return s;
+    }
+
+    switch (e_type) {
+        case ET_NONE: return "NONE";
+        case ET_REL:  return "REL";
+        case ET_EXEC: return "EXEC";
+        case ET_DYN:  return "DYN";
+        case ET_CORE: return "CORE";
+
+        default:
+            snprintf(s, 16, "UNK+%#x", e_type);
+            return s;
+    }
+}
+
+const char *get_machine(uint16_t e_machine) {
+    static char s[16];
+    memset(s, 0, 16);
+
+    switch (e_machine) {
         case EM_NONE:         return "No specific instruction set";
         case EM_WE32100:      return "AT&T WE 32100";
         case EM_SPARC:        return "SPARC";
@@ -154,18 +154,18 @@ char *get_machine(Elf64_Ehdr* elf_head) {
         case EM_LOONGARCH:    return "LoongArch";
 
         default:
-            snprintf(s, 16, "Unknown (%d)", elf_head->e_machine);
+            snprintf(s, 16, "Unknown (%#x)", e_machine);
             return s;
 
     }
 }
 
-char *get_ptype(Elf64_Phdr *elf_phead) {
+const char *get_ptype(uint32_t p_type) {
     static char s[16];
     memset(s, 0, 16);
 
-    if ((elf_phead->p_type >= PT_LOOS) && (elf_phead->p_type <= PT_HIOS)) {
-            switch (elf_phead->p_type) {
+    if ((p_type >= PT_LOOS) && (p_type <= PT_HIOS)) {
+            switch (p_type) {
                 case PT_GNU_EH_FRAME: return "GNU_EH_FRAME";
                 case PT_GNU_STACK:    return "GNU_STACK";
                 case PT_GNU_RELRO:    return "GNU_RELRO";
@@ -174,20 +174,20 @@ char *get_ptype(Elf64_Phdr *elf_phead) {
                 case PT_SUNWBSS:      return "SUNWBSS";
                 case PT_SUNWSTACK:    return "SUNWSTACK";
                 default:
-                    if (elf_phead->p_type >= PT_LOSUNW)
-                        snprintf(s, 16, "SUN+%#x", elf_phead->p_type);
+                    if (p_type >= PT_LOSUNW)
+                        snprintf(s, 16, "SUN+%#x", p_type);
                     else
-                        snprintf(s, 16, "OS+%#x", elf_phead->p_type);
+                        snprintf(s, 16, "OS+%#x", p_type);
                     return s;
         }
     }
 
-    if ((elf_phead->p_type >= PT_LOPROC) && (elf_phead->p_type <= PT_HIPROC)) {
-        snprintf(s, 16, "PROC+%#x", elf_phead->p_type);
+    if ((p_type >= PT_LOPROC) && (p_type <= PT_HIPROC)) {
+        snprintf(s, 16, "PROC+%#x", p_type);
         return s;
     }
 
-    switch (elf_phead->p_type) {
+    switch (p_type) {
         case PT_NULL:    return "NULL";
         case PT_LOAD:    return "LOAD";
         case PT_DYNAMIC: return "DYNAMIC";
@@ -198,7 +198,98 @@ char *get_ptype(Elf64_Phdr *elf_phead) {
         case PT_TLS:     return "TLS";
         case PT_NUM:     return "NUM";
         default:
-            snprintf(s, 16, "UNK+%#x", elf_phead->p_type);
+            snprintf(s, 16, "UNK+%#x", p_type);
             return s;
     }
+}
+
+const char *get_stype(uint32_t sh_type) {
+    static char s[16];
+    memset(s, 0, 16);
+
+    if ((sh_type >= SHT_LOOS) && (sh_type <= SHT_HIOS)) {
+        snprintf(s, 16, "OS+%#x", sh_type);
+        return s;
+    }
+
+    if ((sh_type >= SHT_LOPROC) && (sh_type <= SHT_HIPROC)) {
+        snprintf(s, 16, "PROC+%#x", sh_type);
+        return s;
+    }
+
+    if ((sh_type >= SHT_LOUSER) && (sh_type <= SHT_HIUSER)) {
+        snprintf(s, 16, "USER+%#x", sh_type);
+        return s;
+    }
+
+    switch (sh_type) {
+        case SHT_NULL:          return "NULL";
+        case SHT_PROGBITS:      return "PROGBITS";
+        case SHT_SYMTAB:        return "SYMTAB";
+        case SHT_STRTAB:        return "STRTAB";
+        case SHT_RELA:          return "RELA";
+        case SHT_HASH:          return "HASH";
+        case SHT_DYNAMIC:       return "DYNAMIC";
+        case SHT_NOTE:          return "NOTE";
+        case SHT_NOBITS:        return "NOBITS";
+        case SHT_REL:           return "REL";
+        case SHT_SHLIB:         return "SHLIB";
+        case SHT_DYNSYM:        return "DYNSYM";
+        case SHT_INIT_ARRAY:    return "INIT_ARRAY";
+        case SHT_FINI_ARRAY:    return "FINI_ARRAY";
+        case SHT_PREINIT_ARRAY: return "PREINIT_ARRAY";
+        case SHT_GROUP:         return "GROUP";
+        case SHT_SYMTAB_SHNDX:  return "SYMTAB_SHNDX";
+
+        default:
+            snprintf(s, 16, "UNK+%#x", sh_type);
+            return s;
+    }
+}
+
+const char *get_sflags(uint64_t sh_flags) {
+    static char s[16];
+    memset(s, ' ', 15);
+
+    const struct {
+        uint64_t f;
+        char c;
+    } flags[14] =
+        {
+            { SHF_WRITE, 'W' },
+            { SHF_ALLOC, 'A' },
+            { SHF_EXECINSTR, 'X' },
+            { SHF_MERGE, 'M' },
+            { SHF_STRINGS, 'S' },
+            { SHF_INFO_LINK, 'I' },
+            { SHF_LINK_ORDER, 'L' },
+            { SHF_OS_NONCONFORMING, 'O' },
+            { SHF_GROUP, 'G' },
+            { SHF_TLS, 'T' },
+            { SHF_COMPRESSED, 'C' },
+            { SHF_EXCLUDE, 'E' },
+            { SHF_MASKOS, 'o' },
+            { SHF_MASKPROC, 'p' }
+        };
+
+    for (int i = 0; i < 14; i++) {
+        if (sh_flags & flags[i].f) {
+            s[i] = flags[i].c;
+            sh_flags &= ~flags[i].f;
+        }
+    }
+
+    // If there's till flags, mark as unkown
+    if (sh_flags)
+        s[14] = 'u';
+
+    s[15] = 0;
+    return s;
+}
+
+const char *get_string(Elf64_Ehdr *elf_header, uint32_t sh_name, char* elf_image) {
+    Elf64_Shdr *str_table_header = (Elf64_Shdr*) (elf_image + elf_header->e_shoff
+        + (elf_header->e_shstrndx * elf_header->e_shentsize));
+    char* str_table = elf_image + str_table_header->sh_offset;
+    return str_table + sh_name;
 }
