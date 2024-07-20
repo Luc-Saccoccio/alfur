@@ -315,6 +315,23 @@ typedef struct {
 #define STV_PROTECTED   3
 
 
+// Relocations table
+typedef struct {
+  uint64_t  r_offset;
+  uint64_t  r_info;
+} Elf64_Rel;
+
+typedef struct {
+  uint64_t r_offset;
+  uint64_t r_info;
+  int64_t  r_addend;
+} Elf64_Rela;
+
+#define ELF64_R_SYM(i)    ((i)>>32)
+#define ELF64_R_TYPE(i)   ((i)&0xffffffffL)
+#define ELF64_R_INFO(s,t) (((s)<<32)+((t)&0xffffffffL))
+
+
 // Functions
 
 const char *get_class(uint8_t e_class);
