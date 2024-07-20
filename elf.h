@@ -271,6 +271,50 @@ typedef struct {
 #define SHF_MASKPROC         0xf0000000
 
 
+// Symbols table
+typedef struct {
+    uint32_t st_name;
+    unsigned char st_info;
+    unsigned char st_other;
+    uint16_t st_shndx;
+    uint64_t st_value;
+    uint64_t st_size;
+} Elf64_Sym;
+
+
+// Symbol binding
+#define ELF64_ST_BIND(i)   ((i)>>4)
+#define STB_LOCAL   0
+#define STB_GLOBAL  1
+#define STB_WEAK    2
+#define STB_LOOS    10
+#define STB_HIOS    12
+#define STB_LOPROC  13
+#define STB_HIPROC  15
+
+// Symbol type
+#define ELF64_ST_TYPE(i)   ((i)&0xf)
+#define STT_NOTYPE  0
+#define STT_OBJECT  1
+#define STT_FUNC    2
+#define STT_SECTION 3
+#define STT_FILE    4
+#define STT_COMMON  5
+#define STT_TLS     6
+#define STT_LOOS    10
+#define STT_HIOS    12
+#define STT_LOPROC  13
+#define STT_HIPROC  15
+
+#define ELF64_ST_INFO(b,t) (((b)<<4)+((t)&0xf))
+
+#define ELF64_ST_VISIBILITY(o) ((o)&0x3)
+#define STV_DEFAULT     0
+#define STV_INTERNAL    1
+#define STV_HIDDEN      2
+#define STV_PROTECTED   3
+
+
 // Functions
 
 const char *get_class(uint8_t e_class);
@@ -280,4 +324,8 @@ const char *get_machine(uint16_t e_machine);
 const char *get_ptype(uint32_t p_type);
 const char *get_stype(uint32_t sh_type);
 const char *get_sflags(uint64_t sh_flags);
-const char *get_string(Elf64_Ehdr *elf_head, uint32_t sh_name, char* elf_image);
+const char *get_sym_type(uint64_t st_info);
+const char* get_sym_bind(uint64_t st_info);
+const char *get_sym_vis(uint64_t st_info);
+const char *get_sym_ndx(uint64_t st_shndx);
+const char *get_string(char *file, uint32_t sh_name);

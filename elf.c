@@ -287,9 +287,70 @@ const char *get_sflags(uint64_t sh_flags) {
     return s;
 }
 
-const char *get_string(Elf64_Ehdr *elf_header, uint32_t sh_name, char* elf_image) {
-    Elf64_Shdr *str_table_header = (Elf64_Shdr*) (elf_image + elf_header->e_shoff
-        + (elf_header->e_shstrndx * elf_header->e_shentsize));
-    char* str_table = elf_image + str_table_header->sh_offset;
-    return str_table + sh_name;
+const char *get_sym_type(uint64_t st_info) {
+    uint64_t type = ELF64_ST_TYPE(st_info);
+    static char s[16];
+    memset(s, 0, 16);
+
+    switch (type) {
+        case STT_NOTYPE:  return "NOTYPE";
+        case STT_OBJECT:  return "OBJECT";
+        case STT_FUNC:    return "FUNC";
+        case STT_SECTION: return "SECTION";
+        case STT_FILE:    return "FILE";
+        case STT_COMMON:  return "COMMON";
+        case STT_TLS:     return "TLS";
+        default:
+            snprintf(s, 16, "UNK+%ld", type);
+            return s;
+
+    }
+}
+
+const char* get_sym_bind(uint64_t st_info) {
+    uint64_t bind = ELF64_ST_BIND(st_info);
+    static char s[16];
+    memset(s, 0, 16);
+
+    switch (bind) {
+        case STB_LOCAL:   return "LOCAL";
+        case STB_GLOBAL:  return "GLOBAL";
+        case STB_WEAK:    return "WEAK";
+        default:
+            snprintf(s, 16, "UNK+%ld", bind);
+            return s;
+    }
+}
+
+const char *get_sym_vis(uint64_t st_info) {
+    uint64_t vis = ELF64_ST_VISIBILITY(st_info);
+    static char s[16];
+
+    switch (vis) {
+        case STV_DEFAULT:   return "DEFAULT";
+        case STV_INTERNAL:  return "INTERNAL";
+        case STV_HIDDEN:    return "HIDDEN";
+        case STV_PROTECTED: return "PROTECTED";
+        default:
+            snprintf(s, 16, "UNK+%ld", vis);
+            return s;
+    }
+}
+
+const char *get_sym_ndx(uint64_t st_shndx) {
+    static char s[16];
+    memset(s, 0, 16);
+
+    switch (st_shndx) {
+        case SHN_UNDEF:  return "UND";
+        case SHN_ABS:    return "ABS";
+        case SHN_COMMON: return "COM";
+        default:
+            snprintf(s, 16, "%3ld", st_shndx);
+            return s;
+    }
+}
+
+const char *get_string(char *table, uint32_t sh_name) {
+    return table + sh_name;
 }
