@@ -8,11 +8,9 @@ Learn about ELF files by dissecting them. Without mercy.
 
 ## TODO
 
-- [ ] Dissect sections
-- [ ] Dissect segments (?)
-- [ ] Dissect everything
+- [ ] Segment to Sections mapping
+- [ ] Clear code
 - [ ] Disassemble ?
-- [ ] Store informations about ELF in a structure to avoid re-reading
 
 ## Sources
 

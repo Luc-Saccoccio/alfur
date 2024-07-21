@@ -20,6 +20,9 @@ typedef struct {
     char *elf_image;
 } Elf64_data;
 
+Elf64_Shdr *get_section(Elf64_data *data, uint64_t index) {
+    return (Elf64_Shdr*)(data->elf_shead + (index * data->elf_head->e_shentsize));
+}
 
 void usage(void) {
     fprintf(stderr, "Usage: alfur <file>\n");
@@ -71,8 +74,7 @@ void display_header(Elf64_data* file, char* elf_path) {
 
     file->elf_phead = file->elf_image + file->elf_head->e_phoff;
     file->elf_shead = file->elf_image + file->elf_head->e_shoff;
-    file->shstr_table_header = (Elf64_Shdr*)(file->elf_image + file->elf_head->e_shoff
-        + (file->elf_head->e_shstrndx * file->elf_head->e_shentsize));
+    file->shstr_table_header = get_section(file, file->elf_head->e_shstrndx);
     file->shstr_table = file->elf_image + file->shstr_table_header->sh_offset;
 }
 
@@ -86,7 +88,10 @@ void display_programs(Elf64_data *file) {
     Elf64_Phdr *elf_phead = (Elf64_Phdr*)file->elf_phead;
 
     for (int i = 0; i < file->elf_head->e_phnum; i++, elf_phead++) {
-        fprintf(stdout, "\n* %s\n", get_ptype(elf_phead->p_type));
+        fprintf(stdout, "\n* %s\n",
+                elf_phead->p_type ^ PT_INTERP
+                    ? get_ptype(elf_phead->p_type)
+                    : get_interp(elf_phead, file->elf_image));
         fprintf(stdout, "            Offset 0x%16.16lx   0x%16.16lx Virtual Address\n", elf_phead->p_offset, elf_phead->p_vaddr);
         fprintf(stdout, "  Physical Address 0x%16.16lx   0x%16.16lx File Size\n", elf_phead->p_paddr, elf_phead->p_filesz);
         fprintf(stdout, "       Memory Size 0x%16.16lx   %c%c%c   0x%-10lx Flags & Align\n", elf_phead->p_memsz,
@@ -130,17 +135,18 @@ void display_symbols(Elf64_Shdr *section, Elf64_data *file) {
 
     uint64_t sym_num = section->sh_size / section->sh_entsize;
     Elf64_Sym *sym = (Elf64_Sym*)(file->elf_image + section->sh_offset);
-    Elf64_Shdr *sym_names_table_header = (Elf64_Shdr*)(file->elf_image + file->elf_head->e_shoff
-            + (section->sh_link * file->elf_head->e_shentsize));
+    Elf64_Shdr *sym_names_table_header = get_section(file, section->sh_link);
     char *sym_names_table = file->elf_image + sym_names_table_header->sh_offset;
 
     fprintf(stdout, "  Num:  Value            Size Type    Bind   Visibility Ndx Name\n");
     for (int i = 0; i < sym_num; i++, sym++) {
-        fprintf(stdout, "  {%3d}: %16.16lx %4ld", i, sym->st_value, sym->st_size);
+        fprintf(stdout, "  {%5d}: %16.16lx %4ld", i, sym->st_value, sym->st_size);
         fprintf(stdout, " %-7s %-6s %-9s", get_sym_type(sym->st_info), get_sym_bind(sym->st_info),
                 get_sym_vis(sym->st_other));
         fprintf(stdout, "  %s %s\n", get_sym_ndx(sym->st_shndx),
-                get_string(sym_names_table, sym->st_name));
+                ELF64_ST_TYPE(sym->st_info) & STT_SECTION
+                    ? get_string(file->shstr_table, get_section(file, sym->st_shndx)->sh_name)
+                    : get_string(sym_names_table, sym->st_name));
     }
 
 }
@@ -204,9 +210,9 @@ void display_rel(Elf64_Shdr *section, Elf64_data *file) {
         return;
     }
 
-    Elf64_Shdr *symtab_header = (Elf64_Shdr*)(file->elf_shead + section->sh_link * file->elf_head->e_shentsize);
+    Elf64_Shdr *symtab_header = get_section(file, section->sh_link);
     char *symtab = file->elf_image + symtab_header->sh_offset;
-    Elf64_Shdr *sym_names_table_header = (Elf64_Shdr*)(file->elf_shead + (symtab_header->sh_link * file->elf_head->e_shentsize));
+    Elf64_Shdr *sym_names_table_header = get_section(file, symtab_header->sh_link);
 
     char *sym_names_table = file->elf_image + sym_names_table_header->sh_offset;
 
@@ -232,9 +238,9 @@ void display_rela(Elf64_Shdr *section, Elf64_data *file) {
         return;
     }
 
-    Elf64_Shdr *symtab_header = (Elf64_Shdr*)(file->elf_shead + section->sh_link * file->elf_head->e_shentsize);
+    Elf64_Shdr *symtab_header = get_section(file, section->sh_link);
     char *symtab = file->elf_image + symtab_header->sh_offset;
-    Elf64_Shdr *sym_names_table_header = (Elf64_Shdr*)(file->elf_shead + (symtab_header->sh_link * file->elf_head->e_shentsize));
+    Elf64_Shdr *sym_names_table_header = get_section(file, symtab_header->sh_link);
 
     char *sym_names_table = file->elf_image + sym_names_table_header->sh_offset;
 
@@ -242,10 +248,10 @@ void display_rela(Elf64_Shdr *section, Elf64_data *file) {
     Elf64_Rela *entry = (Elf64_Rela*)(file->elf_image + section->sh_offset);
     Elf64_Sym *sym;
 
-    fputs("Offset        Info          Type  Symbol Value     Name - Addend\n", stdout);
+    fputs("Offset        Info          Type  Symbol Value     Name ; Addend\n", stdout);
     for (int i = 0; i < relo_num; i++, entry++) {
         sym = (Elf64_Sym*)(symtab + symtab_header->sh_entsize * ELF64_R_SYM(entry->r_info));
-        fprintf(stdout, "%12.12lx  %12.12lx %5ld  %16.16lx %s - %ld\n",
+        fprintf(stdout, "%12.12lx  %12.12lx %5ld  %16.16lx %s ; %ld\n",
                 entry->r_offset, entry->r_info, ELF64_R_TYPE(entry->r_info),
                 sym->st_value, get_string(sym_names_table, sym->st_name), entry->r_addend);
     }

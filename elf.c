@@ -203,6 +203,13 @@ const char *get_ptype(uint32_t p_type) {
     }
 }
 
+const char *get_interp(Elf64_Phdr *elf_phead, char* elf_image) {
+    static char s[1024] = "INTERP: ";
+    s[8] = 0;
+    strcpy(s + 8, elf_image + elf_phead->p_offset);
+    return s;
+}
+
 const char *get_stype(uint32_t sh_type) {
     static char s[16];
     memset(s, 0, 16);

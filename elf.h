@@ -339,6 +339,7 @@ const char *get_osabi(uint8_t e_osabi);
 const char *get_etype(uint16_t e_type);
 const char *get_machine(uint16_t e_machine);
 const char *get_ptype(uint32_t p_type);
+const char *get_interp(Elf64_Phdr *elf_phead, char* elf_image);
 const char *get_stype(uint32_t sh_type);
 const char *get_sflags(uint64_t sh_flags);
 const char *get_sym_type(uint64_t st_info);
